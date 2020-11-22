@@ -9,13 +9,14 @@ class DOMHelper {
     const element = document.getElementById(elementId);
     const destinationElement = document.querySelector(newDestinationSelector);
     destinationElement.append(element);
+    element.scrollIntoView({behavior: 'smooth'});
   }
 }
 
 class Component {
   constructor(hostElementId, insertBefore = false) {
     if (hostElementId) {
-      this.hostElementId = document.getElementById(hostElementId);
+      this.hostElement = document.getElementById(hostElementId);
     } else {
       this.hostElement = document.body;
     }
@@ -38,9 +39,10 @@ class Component {
 }
 
 class Tooltip extends Component {
-  constructor(closeNotifierFunction) {
-    super();
+  constructor(closeNotifierFunction, text, hostElementId) {
+    super(hostElementId);
     this.closeNotifier = closeNotifierFunction;
+    this.text = text;
     this.render();
   }
 
@@ -48,10 +50,28 @@ class Tooltip extends Component {
     this.detach();
     this.closeNotifier();
   };
+
   render() {
     const tooltipElement = document.createElement('div');
     tooltipElement.className = 'card';
-    tooltipElement.textContent = 'Hamza Zukorlic';
+    const tooltipTemplate = document.getElementById('tooltip');
+    const tooltipBody = document.importNode(tooltipTemplate.content, true);
+    tooltipBody.querySelector('p').textContent = this.text;
+    tooltipElement.append(tooltipBody);
+
+    const hostElPosLeft = this.hostElement.offsetLeft;
+    const hostElPosTop = this.hostElement.offsetTop;
+    const hostElHeight = this.hostElement.clientHeight;
+    const hostElScrollSize = this.hostElement.parentElement.scrollTop;
+    // parentElement in order to refer to whole box.
+
+    const x = hostElPosLeft + 20;
+    const y = hostElPosTop + hostElHeight - hostElScrollSize - 10;
+
+    tooltipElement.style.position = 'absolute';
+    tooltipElement.style.left = x + 'px'; // 500 px
+    tooltipElement.style.top = y + 'px';
+
     tooltipElement.addEventListener('click', this.closeTooltip);
     this.element = tooltipElement;
   }
@@ -71,9 +91,16 @@ class ProjectItem {
     if (this.hasActiveTooltip) {
       return;
     }
-    const tooltip = new Tooltip(() => {
-      this.hasActiveTooltip = false;
-    });
+    const projectElement = document.getElementById(this.id);
+    const tooltipText = projectElement.dataset.extraInfo;
+    // projectElement.dataset.someInfo = 'Test'; //how we add data
+    const tooltip = new Tooltip(
+      () => {
+        this.hasActiveTooltip = false;
+      },
+      tooltipText,
+      this.id
+    );
     tooltip.attach();
     this.hasActiveTooltip = true;
   }
@@ -83,7 +110,10 @@ class ProjectItem {
     const moreInfoButton = projectItemElement.querySelector(
       'button:first-of-type'
     );
-    moreInfoButton.addEventListener('click', this.showMoreInfoHandler);
+    moreInfoButton.addEventListener(
+      'click',
+      this.showMoreInfoHandler.bind(this)
+    );
   }
 
   connectSwitchButton(type) {
@@ -144,6 +174,21 @@ class App {
     finishedProjectsList.setSwitchHandlerFunction(
       activeProjectsList.addProject.bind(activeProjectsList)
     );
+
+  //   const timerId = setTimeout(this.startAnalytics, 3000);
+
+  //   document
+  //     .getElementById('stop-analytics-btn')
+  //     .addEventListener('click', () => {
+  //       clearTimeout(timerId);
+  //     });
+  // }
+
+  // static startAnalytics() {
+  //   const analyticsScript = document.createElement('script');
+  //   analyticsScript.src = 'assets/scripts/analytics.js';
+  //   analyticsScript.defer = true;
+  //   document.head.append(analyticsScript);
   }
 }
 
